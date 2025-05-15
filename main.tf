@@ -176,7 +176,7 @@ resource "aws_security_group" "ssh_sg" {
 
 #ROLE CREATION FOR  EC2 RESOURCE ACCESS
 resource "aws_iam_role" "ec2_secrets_role" {
-  name = "EC2SecretsRole"
+  name = "EC2SecretsRoles"
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17",
@@ -216,7 +216,7 @@ resource "aws_iam_role_policy_attachment" "attach_secrets_policy" {
 }
 
 resource "aws_iam_instance_profile" "ec2_instance_profile" {
-  name = "EC2InstanceProfile"
+  name = "EC2InstanceProfiles"
   role = aws_iam_role.ec2_secrets_role.name
 }
 
