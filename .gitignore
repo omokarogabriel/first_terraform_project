@@ -4,6 +4,7 @@
 *.tfstate.backup             # Terraform backup files
 .terraform.lock.hcl          # Terraform lock file
 
+tfplan
 # Ignore crash logs
 # crash.log
 
