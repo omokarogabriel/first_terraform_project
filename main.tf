@@ -1,3 +1,4 @@
+#Region
 provider "aws" {
   region = var.region
 }
@@ -5,6 +6,11 @@ provider "aws" {
 # Fetches the list of all available AZs in the specified region
 data "aws_availability_zones" "available" {}
 
+#Fetches the account-id
+data "aws_caller_identity" "current" {}
+
+
+#VPC CREATION
 resource "aws_vpc" "my_vpc" {
   cidr_block = var.vpc_cidr
   enable_dns_hostnames = true
@@ -15,6 +21,9 @@ resource "aws_vpc" "my_vpc" {
   }
 }
 
+
+#INTERNET GATEWAY CREATION
+
 resource "aws_internet_gateway" "my_vpc_igw" {
   vpc_id = aws_vpc.my_vpc.id
 
@@ -23,6 +32,8 @@ resource "aws_internet_gateway" "my_vpc_igw" {
   }
 }
 
+
+#SUBNET FOR PUBLIC
 resource "aws_subnet" "for_publicEC2" {
   count = 2
   vpc_id = aws_vpc.my_vpc.id
@@ -35,6 +46,8 @@ resource "aws_subnet" "for_publicEC2" {
   }
 }
 
+
+#ROUTE TABLE FOR INTERNET ACCESS
 resource "aws_route_table" "for_public_access" {
   vpc_id = aws_vpc.my_vpc.id
 
@@ -49,6 +62,7 @@ resource "aws_route_table" "for_public_access" {
 }
 
 
+#ASSOCIATING THE ROUTE TABLE WITH THE EC2 INSTANCE
 resource "aws_route_table_association" "public" {
     count = 2
     subnet_id = aws_subnet.for_publicEC2[count.index].id
@@ -56,6 +70,8 @@ resource "aws_route_table_association" "public" {
 }
 
 
+
+#SECURITY GROUP FOR TRAFFIC HTTP AND HTTPS
 resource "aws_security_group" "web_sg" {
   name        = "web-sg"
   description = "Allow HTTP and HTTPS"
@@ -88,6 +104,8 @@ resource "aws_security_group" "web_sg" {
   }
 }
 
+
+#SECURITY GROUP FOR SSH ACCESS
 
 resource "aws_security_group" "ssh_sg" {
   name        = "ssh-sg"
@@ -155,6 +173,56 @@ resource "aws_security_group" "ssh_sg" {
 #   role = aws_iam_role.ec2_secrets_role.name
 # }
 
+
+#ROLE CREATION FOR  EC2 RESOURCE ACCESS
+resource "aws_iam_role" "ec2_secrets_role" {
+  name = "EC2SecretsRole"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17",
+    Statement = [{
+      Effect = "Allow",
+      Principal = {
+        Service = "ec2.amazonaws.com"
+      },
+      Action = "sts:AssumeRole"
+    }]
+  })
+
+  tags = {
+    Name = "EC2SecretsRole"
+  }
+}
+
+resource "aws_iam_policy" "ec2_secrets_policy" {
+  name        = "EC2SecretsManagerPolicy"
+  description = "Allows EC2 to get GitHub SSH Key from Secrets Manager"
+  policy      = jsonencode({
+    Version = "2012-10-17",
+    Statement = [{
+      Effect = "Allow",
+      Action = [
+        "secretsmanager:GetSecretValue",
+        "secretsmanager:DescribeSecret"
+      ],
+      Resource = "arn:aws:secretsmanager:${var.region}:${data.aws_caller_identity.current.account_id}:secret:github_ssh_private_key*"
+    }]
+  })
+}
+
+resource "aws_iam_role_policy_attachment" "attach_secrets_policy" {
+  role       = aws_iam_role.ec2_secrets_role.name
+  policy_arn = aws_iam_policy.ec2_secrets_policy.arn
+}
+
+resource "aws_iam_instance_profile" "ec2_instance_profile" {
+  name = "EC2InstanceProfile"
+  role = aws_iam_role.ec2_secrets_role.name
+}
+
+
+
+#EC2 INSTANCE
 resource "aws_instance" "public_server" {
   ami = var.ami
   instance_type = var.instance_type
@@ -165,6 +233,7 @@ resource "aws_instance" "public_server" {
 
   # Reference the instance profile created via AWS CLI
   # iam_instance_profile = "aws_iam_instance_profile.ec2_instance_profile.name" 
+  iam_instance_profile = aws_iam_instance_profile.ec2_instance_profile.name
 
   user_data = file("./user_data.sh")
 
