@@ -1,0 +1,11 @@
+# Ignore Terraform state and cache files
+.terraform/                  # Terraform local cache folder
+*.tfstate                    # Terraform state files
+*.tfstate.backup             # Terraform backup files
+.terraform.lock.hcl          # Terraform lock file
+
+# Ignore crash logs
+# crash.log
+
+# Ignore Terraform variable definitions
+# terraform.tfvars
