@@ -213,7 +213,7 @@ resource "aws_security_group" "ssh_sg" {
 
 
 
-
+# #ROLE CREATION FOR  EC2 RESOURCE ACCESS
 resource "aws_iam_role" "ec2_secrets_role" {
   name = "MyEC2SecretsRole"
 
