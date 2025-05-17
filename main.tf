@@ -132,20 +132,27 @@ resource "aws_security_group" "ssh_sg" {
   }
 }
 
+
+
+
+# #ROLE CREATION FOR  EC2 RESOURCE ACCESS
 # resource "aws_iam_role" "ec2_secrets_role" {
-#   name               = "EC2SecretsRole"
+#   name = "EC2SecretsRoles"
+
 #   assume_role_policy = jsonencode({
 #     Version = "2012-10-17",
-#     Statement = [
-#       {
-#         Effect    = "Allow",
-#         Principal = {
-#           Service = "ec2.amazonaws.com"
-#         },
-#         Action = "sts:AssumeRole"
-#       }
-#     ]
+#     Statement = [{
+#       Effect = "Allow",
+#       Principal = {
+#         Service = "ec2.amazonaws.com"
+#       },
+#       Action = "sts:AssumeRole"
+#     }]
 #   })
+
+#   tags = {
+#     Name = "EC2SecretsRole"
+#   }
 # }
 
 # resource "aws_iam_policy" "ec2_secrets_policy" {
@@ -153,13 +160,14 @@ resource "aws_security_group" "ssh_sg" {
 #   description = "Allows EC2 to get GitHub SSH Key from Secrets Manager"
 #   policy      = jsonencode({
 #     Version = "2012-10-17",
-#     Statement = [
-#       {
-#         Effect   = "Allow",
-#         Action   = ["secretsmanager:GetSecretValue"],
-#         Resource = "arn:aws:secretsmanager:us-east-1:401739135392:secret:github_ssh_private_key-*"
-#       }
-#     ]
+#     Statement = [{
+#       Effect = "Allow",
+#       Action = [
+#         "secretsmanager:GetSecretValue",
+#         "secretsmanager:DescribeSecret"
+#       ],
+#       Resource = "arn:aws:secretsmanager:${var.region}:${data.aws_caller_identity.current.account_id}:secret:new_github_ssh_private_key*"
+#     }]
 #   })
 # }
 
@@ -169,14 +177,45 @@ resource "aws_security_group" "ssh_sg" {
 # }
 
 # resource "aws_iam_instance_profile" "ec2_instance_profile" {
-#   name = "EC2InstanceProfile"
+#   name = "EC2InstanceProfiles"
 #   role = aws_iam_role.ec2_secrets_role.name
 # }
 
 
-#ROLE CREATION FOR  EC2 RESOURCE ACCESS
+
+# #EC2 INSTANCE
+# resource "aws_instance" "public_server" {
+#   ami = var.ami
+#   instance_type = var.instance_type
+#   subnet_id = aws_subnet.for_publicEC2[0].id
+#   vpc_security_group_ids = [aws_security_group.web_sg.id, aws_security_group.ssh_sg.id]
+#   associate_public_ip_address = true
+#   key_name = "AwsKey"
+
+#   # Reference the instance profile created via AWS CLI
+#   # iam_instance_profile = "aws_iam_instance_profile.ec2_instance_profile.name" 
+#   iam_instance_profile = aws_iam_instance_profile.ec2_instance_profile.name
+
+#   user_data = file("./user_data.sh")
+
+#   tags = {
+#     Name = "My_VPC_Web_Server"
+#   }
+
+# }
+
+
+
+
+
+
+
+
+
+
+
 resource "aws_iam_role" "ec2_secrets_role" {
-  name = "EC2SecretsRoles"
+  name = "MyEC2SecretsRole"
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17",
@@ -188,10 +227,6 @@ resource "aws_iam_role" "ec2_secrets_role" {
       Action = "sts:AssumeRole"
     }]
   })
-
-  tags = {
-    Name = "EC2SecretsRole"
-  }
 }
 
 resource "aws_iam_policy" "ec2_secrets_policy" {
@@ -205,7 +240,9 @@ resource "aws_iam_policy" "ec2_secrets_policy" {
         "secretsmanager:GetSecretValue",
         "secretsmanager:DescribeSecret"
       ],
-      Resource = "arn:aws:secretsmanager:${var.region}:${data.aws_caller_identity.current.account_id}:secret:github_ssh_private_key*"
+      # Resource = "arn:aws:secretsmanager:${var.region}:${data.aws_caller_identity.current.account_id}:secret:new_github_ssh_private_key"
+    "Resource": "arn:aws:secretsmanager:${var.region}:${data.aws_caller_identity.current.account_id}:secret:new_github_ssh_private_key-*"
+
     }]
   })
 }
@@ -216,29 +253,22 @@ resource "aws_iam_role_policy_attachment" "attach_secrets_policy" {
 }
 
 resource "aws_iam_instance_profile" "ec2_instance_profile" {
-  name = "EC2InstanceProfiles"
+  name = "MyEC2InstanceProfile"
   role = aws_iam_role.ec2_secrets_role.name
 }
 
 
 
-#EC2 INSTANCE
 resource "aws_instance" "public_server" {
-  ami = var.ami
-  instance_type = var.instance_type
-  subnet_id = aws_subnet.for_publicEC2[0].id
-  vpc_security_group_ids = [aws_security_group.web_sg.id, aws_security_group.ssh_sg.id]
+  ami                         = var.ami
+  instance_type              = var.instance_type
+  subnet_id                  = aws_subnet.for_publicEC2[0].id
+  vpc_security_group_ids     = [aws_security_group.web_sg.id, aws_security_group.ssh_sg.id]
   associate_public_ip_address = true
-  key_name = "AwsKey"
-
-  # Reference the instance profile created via AWS CLI
-  # iam_instance_profile = "aws_iam_instance_profile.ec2_instance_profile.name" 
-  iam_instance_profile = aws_iam_instance_profile.ec2_instance_profile.name
-
-  user_data = file("./user_data.sh")
+  iam_instance_profile       = aws_iam_instance_profile.ec2_instance_profile.name
+  user_data                  = file("./user_data.sh")
 
   tags = {
     Name = "My_VPC_Web_Server"
   }
-
 }
