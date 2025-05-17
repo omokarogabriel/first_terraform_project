@@ -32,3 +32,9 @@ output "internet_gateway_id" {
   description = "Internet Gateway ID for VPC"
   value       = aws_internet_gateway.my_vpc_igw.id
 }
+
+output "account_id" {
+  description = "The AWS Account ID"
+  value       = data.aws_caller_identity.current.account_id
+}
+

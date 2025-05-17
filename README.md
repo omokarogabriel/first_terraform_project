@@ -14,10 +14,9 @@ With deploying a static website using BASH SCRIPT.
 
 ## 🚀 **Features**
 - VPC with public and private subnets
-- Internet Gateway and NAT Gateway configuration
-- Security groups for public and private access
+- Internet Gateway configuration
+- Security groups for public and access
 - EC2 instances with SSH access
-- RDS instance with security group
 
 ## ✅ **Prerequisites**
 - Terraform >= 1.0.0
