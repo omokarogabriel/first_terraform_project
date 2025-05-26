@@ -49,7 +49,7 @@ resource "aws_iam_role" "ec2_secrets_role" {
   })
 }
 
-## **I also created a policy that the ec2 make do**
+## **I also created a policy that the ec2 must do**
 - ```bash
 resource "aws_iam_policy" "ec2_secrets_policy" {
   name        = "EC2SecretsManagerPolicy"

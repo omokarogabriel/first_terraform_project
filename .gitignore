@@ -5,6 +5,7 @@
 .terraform.lock.hcl          # Terraform lock file
 
 tfplan
+mytfplan
 # Ignore crash logs
 # crash.log
 

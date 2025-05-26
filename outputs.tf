@@ -1,6 +1,6 @@
 output "instance_public_ip" {
   description = "Public IP of the EC2 instance"
-  value       = aws_instance.public_server.public_ip
+  value       = aws_instance.public_server
 }
 
 output "vpc_id" {
@@ -37,4 +37,15 @@ output "account_id" {
   description = "The AWS Account ID"
   value       = data.aws_caller_identity.current.account_id
 }
+
+output "ssh_private_key" {
+  value     = data.aws_secretsmanager_secret_version.github_ssh_key.secret_string
+  sensitive = true
+}
+
+output "ssh_private_key_arn" {
+  description = "ARN of the SSH private key secret"
+  value       = data.aws_secretsmanager_secret.github_ssh_key.arn
+}
+
 

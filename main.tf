@@ -83,6 +83,7 @@ resource "aws_security_group" "web_sg" {
     to_port     = 80
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
+    
   }
 
   ingress {
@@ -132,7 +133,27 @@ resource "aws_security_group" "ssh_sg" {
   }
 }
 
+# security rule accepting traffic from the web security group to the ssh security group
+# resource "aws_security_group_rule" "allow_web_to_ssh" {
+#   type              = "ingress"
+#   from_port        = 22
+#   to_port          = 22
+#   protocol         = "tcp"
+#   security_group_id = aws_security_group.ssh_sg.id
+#   source_security_group_id = aws_security_group.web_sg.id
 
+#   description = "Allow SSH access from web security group"
+# }
+
+#allow ssh to ec2
+resource "aws_security_group_rule" "allow_ssh_to_ec2" {
+  type              = "ingress"
+  from_port        = 22
+  to_port          = 22
+  protocol         = "tcp"
+  security_group_id = aws_security_group.web_sg.id
+  source_security_group_id = aws_security_group.ssh_sg.id
+}
 
 
 # #ROLE CREATION FOR  EC2 RESOURCE ACCESS
@@ -204,7 +225,28 @@ resource "aws_security_group" "ssh_sg" {
 
 # }
 
+# #SECRETS MANAGER FOR SSH KEY  
 
+# resource "aws_secretsmanager_secret" "my_private_key" {
+#   name = "new_github_ssh_private_key"
+#   description = "My private GitHub SSH key"
+# }
+
+# resource "aws_secretsmanager_secret_version" "my_private_key_version" {
+#   secret_id     = aws_secretsmanager_secret.my_private_key.id
+#   secret_string = file("/home/omokaro/id_ssh") # Path to your private key file
+# }
+
+
+
+# Reference the secret by name or ARN
+data "aws_secretsmanager_secret" "github_ssh_key" {
+  name = "new_github_ssh_private_key"
+}
+
+data "aws_secretsmanager_secret_version" "github_ssh_key" {
+  secret_id = data.aws_secretsmanager_secret.github_ssh_key.id
+}
 
 
 
@@ -215,7 +257,7 @@ resource "aws_security_group" "ssh_sg" {
 
 # #ROLE CREATION FOR  EC2 RESOURCE ACCESS
 resource "aws_iam_role" "ec2_secrets_role" {
-  name = "MyEC2SecretsRole"
+  name = "ForEC2SecretsRole"
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17",
@@ -260,11 +302,13 @@ resource "aws_iam_instance_profile" "ec2_instance_profile" {
 
 
 resource "aws_instance" "public_server" {
+  count                     = var.instance_count
   ami                         = var.ami
   instance_type              = var.instance_type
   subnet_id                  = aws_subnet.for_publicEC2[0].id
   vpc_security_group_ids     = [aws_security_group.web_sg.id, aws_security_group.ssh_sg.id]
   associate_public_ip_address = true
+  key_name                    = "AwsKey"
   iam_instance_profile       = aws_iam_instance_profile.ec2_instance_profile.name
   user_data                  = file("./user_data.sh")
 
