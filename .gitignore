@@ -11,8 +11,3 @@ mytfplan
 
 # Ignore Terraform variable definitions
 # terraform.tfvars
-.terraform/
-*.tfstate
-*.tfstate.backup
-*.tfplan
-.terraform.lock.hcl
