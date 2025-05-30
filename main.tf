@@ -12,11 +12,11 @@ data "aws_caller_identity" "current" {}
 
 #VPC CREATION
 resource "aws_vpc" "my_vpc" {
-  cidr_block = var.vpc_cidr
+  cidr_block           = var.vpc_cidr
   enable_dns_hostnames = true
-  enable_dns_support = true
+  enable_dns_support   = true
 
-   tags = {
+  tags = {
     Name = "My_VPC"
   }
 }
@@ -27,7 +27,7 @@ resource "aws_vpc" "my_vpc" {
 resource "aws_internet_gateway" "my_vpc_igw" {
   vpc_id = aws_vpc.my_vpc.id
 
-   tags = {
+  tags = {
     Name = "My_VPC_IGW"
   }
 }
@@ -35,10 +35,10 @@ resource "aws_internet_gateway" "my_vpc_igw" {
 
 #SUBNET FOR PUBLIC
 resource "aws_subnet" "for_publicEC2" {
-  count = 2
-  vpc_id = aws_vpc.my_vpc.id
-  cidr_block = var.public_subnet_cidrs[count.index]
-  availability_zone = data.aws_availability_zones.available.names[count.index]
+  count                   = 2
+  vpc_id                  = aws_vpc.my_vpc.id
+  cidr_block              = var.public_subnet_cidrs[count.index]
+  availability_zone       = data.aws_availability_zones.available.names[count.index]
   map_public_ip_on_launch = true
 
   tags = {
@@ -64,9 +64,9 @@ resource "aws_route_table" "for_public_access" {
 
 #ASSOCIATING THE ROUTE TABLE WITH THE EC2 INSTANCE
 resource "aws_route_table_association" "public" {
-    count = 2
-    subnet_id = aws_subnet.for_publicEC2[count.index].id
-    route_table_id = aws_route_table.for_public_access.id
+  count          = 2
+  subnet_id      = aws_subnet.for_publicEC2[count.index].id
+  route_table_id = aws_route_table.for_public_access.id
 }
 
 
@@ -75,15 +75,15 @@ resource "aws_route_table_association" "public" {
 resource "aws_security_group" "web_sg" {
   name        = "web-sg"
   description = "Allow HTTP and HTTPS"
-  vpc_id = aws_vpc.my_vpc.id
-  
+  vpc_id      = aws_vpc.my_vpc.id
+
 
   ingress {
     from_port   = 80
     to_port     = 80
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
-    
+
   }
 
   ingress {
@@ -111,7 +111,7 @@ resource "aws_security_group" "web_sg" {
 resource "aws_security_group" "ssh_sg" {
   name        = "ssh-sg"
   description = "Allow SSH access"
-  vpc_id = aws_vpc.my_vpc.id
+  vpc_id      = aws_vpc.my_vpc.id
 
   ingress {
     from_port   = 22
@@ -147,11 +147,11 @@ resource "aws_security_group" "ssh_sg" {
 
 #allow ssh to ec2
 resource "aws_security_group_rule" "allow_ssh_to_ec2" {
-  type              = "ingress"
-  from_port        = 22
-  to_port          = 22
-  protocol         = "tcp"
-  security_group_id = aws_security_group.web_sg.id
+  type                     = "ingress"
+  from_port                = 22
+  to_port                  = 22
+  protocol                 = "tcp"
+  security_group_id        = aws_security_group.web_sg.id
   source_security_group_id = aws_security_group.ssh_sg.id
 }
 
@@ -274,7 +274,7 @@ resource "aws_iam_role" "ec2_secrets_role" {
 resource "aws_iam_policy" "ec2_secrets_policy" {
   name        = "EC2SecretsManagerPolicy"
   description = "Allows EC2 to get GitHub SSH Key from Secrets Manager"
-  policy      = jsonencode({
+  policy = jsonencode({
     Version = "2012-10-17",
     Statement = [{
       Effect = "Allow",
@@ -283,7 +283,7 @@ resource "aws_iam_policy" "ec2_secrets_policy" {
         "secretsmanager:DescribeSecret"
       ],
       # Resource = "arn:aws:secretsmanager:${var.region}:${data.aws_caller_identity.current.account_id}:secret:new_github_ssh_private_key"
-    "Resource": "arn:aws:secretsmanager:${var.region}:${data.aws_caller_identity.current.account_id}:secret:new_github_ssh_private_key-*"
+      "Resource" : "arn:aws:secretsmanager:${var.region}:${data.aws_caller_identity.current.account_id}:secret:new_github_ssh_private_key-*"
 
     }]
   })
@@ -302,15 +302,15 @@ resource "aws_iam_instance_profile" "ec2_instance_profile" {
 
 
 resource "aws_instance" "public_server" {
-  count                     = var.instance_count
+  count                       = var.instance_count
   ami                         = var.ami
-  instance_type              = var.instance_type
-  subnet_id                  = aws_subnet.for_publicEC2[0].id
-  vpc_security_group_ids     = [aws_security_group.web_sg.id, aws_security_group.ssh_sg.id]
+  instance_type               = var.instance_type
+  subnet_id                   = aws_subnet.for_publicEC2[0].id
+  vpc_security_group_ids      = [aws_security_group.web_sg.id, aws_security_group.ssh_sg.id]
   associate_public_ip_address = true
   key_name                    = "AwsKey"
-  iam_instance_profile       = aws_iam_instance_profile.ec2_instance_profile.name
-  user_data                  = file("./user_data.sh")
+  iam_instance_profile        = aws_iam_instance_profile.ec2_instance_profile.name
+  user_data                   = file("./user_data.sh")
 
   tags = {
     Name = "My_VPC_Web_Server"

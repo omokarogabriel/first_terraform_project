@@ -15,7 +15,7 @@ variable "instance_type" {
 }
 
 variable "ami" {
-   default = "ami-0fc5d935ebf8bc3bc"
+  default = "ami-0fc5d935ebf8bc3bc"
 }
 
 variable "instance_count" {
