@@ -240,13 +240,16 @@ resource "aws_security_group_rule" "allow_ssh_to_ec2" {
 
 
 # Reference the secret by name or ARN
-data "aws_secretsmanager_secret" "github_ssh_key" {
-  name = "new_github_ssh_private_key"
-}
+# resource "aws_secretsmanager_secret" "github_ssh_key" {
+#   description = "GitHub SSH private key for EC2 instances"
+#   name = "new_github_ssh_private_key"
+  
+# }
 
-data "aws_secretsmanager_secret_version" "github_ssh_key" {
-  secret_id = data.aws_secretsmanager_secret.github_ssh_key.id
-}
+# resource "aws_secretsmanager_secret_version" "github_ssh_key" {
+#   secret_id = aws_secretsmanager_secret.github_ssh_key.id
+#   secret_string = file("") # Path to your private key file
+# }
 
 
 
